@@ -274,5 +274,5 @@ initial weight so the activation output at time "t" is close to the activation o
 - W_y scale with GradWxLi and GradWaLi => W_y should be scale the same as W_X so the GradWxLi would be about the size
 of W_X
 
-- The loss is not improve: This maybe due to the randomness of the generated data.
+- The loss is not improve: This maybe due to the randomness of the generated data and the simplicity of the model.
  """
