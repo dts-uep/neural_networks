@@ -10,7 +10,7 @@ def leaky_relu(z, alpha=0.1):
 
 def sigmoid(z):
     
-    # Prevent sigmoid from getting to small which cause Gradient to be to large
+    # Prevent sigmoid from getting to small which cause Gradient to be too large
     if z > 2.2:
         return 0.9
     if z < -2.2:
@@ -249,7 +249,7 @@ main()
 """ 
 Insights:
 - Problem with vanishing gradient and exploding gradient when using sigmoid and high learning rate.
--Because the previous A affect dz1_dwa which affect da_dz1 and eventually affect dL_dWA, while other factor
+- Because the previous A affect dz1_dwa which affect da_dz1 and eventually affect dL_dWA, while other factor
  only occupied 1e-2, the A increase rate is W_a^n * A (plus W_X*X also, and the data originally at 1e+2 already),
  so when the gradient is at exploding state, the model does not learn and give the same predictions and same
  gradient descent direction each time (as the simulated data is small). So a modify on the data is needed so 
