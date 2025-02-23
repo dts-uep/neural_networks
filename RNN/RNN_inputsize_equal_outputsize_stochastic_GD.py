@@ -312,6 +312,7 @@ initial weight so the activation output at time "t" is close to the activation o
 - W_y scale with GradWxLi and GradWaLi => W_y should be scale the same as W_X so the GradWxLi would be about the size
 of W_X
 
+<<<<<<< HEAD
 Results of demo models on large data:
 - Model 1: Even though the data is not scaled, the learning rate is low and gradient exploding does not occur.
 - Model 2: The data is scaled but the learning rate is high and gradient exploding occurs occasionally and if
@@ -321,3 +322,7 @@ not, the optimization will overshoot .
 - Model 1 with lower number of neurons in hidden layer show better learning rate than Model 3.
 - Model 3 with high number of neurons in hidden layer also show a slower learning per data point
  """
+=======
+- The loss does not improve: This maybe due to the randomness of the generated data and the simplicity of the model.
+ """
+>>>>>>> a4139887c888584e4bb1bbf675218fb36797e082
