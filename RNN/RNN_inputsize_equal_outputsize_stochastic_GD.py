@@ -210,7 +210,7 @@ def main():
     X4 = np.random.randint(0, 255 ,(3, 5))  # Time = 5, data at each time step = 3
     X5 = np.random.randint(0, 255 ,(3, 9))  # Time = 9, data at each time step = 3
     input_data = [X1, X2, X3, X4, X5]
-    input_data_scaled = [i/100 for i in input_data ]
+    input_data_scaled = [i/100 for i in input_data]
 
     # Output - two classes 0, 1
     y1 = [1, 1, 0, 1, 0]
@@ -267,7 +267,7 @@ def main():
     for _ in range(n_test_points):
         n_time_frames = random.randint(5, 30) # 5 to 30 time frames, modified if needed
         test_data.append(np.random.randint(0, 255, (data_dimension_per_time, n_time_frames)))
-    test_data_scaled = [i/255 for i in input_data]
+    test_data_scaled = [i/255 for i in test_data]
     
     # Predict
     print("[Model 1 - Predict]")
