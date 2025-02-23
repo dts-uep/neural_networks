@@ -14,7 +14,7 @@ def sigmoid(z):
     if z > 2.2:
         return 0.9
     if z < -2.2:
-        return 0.01
+        return 0.1
     
     return 1 / (1 + np.exp(-1 * z[0, 0])) 
 
