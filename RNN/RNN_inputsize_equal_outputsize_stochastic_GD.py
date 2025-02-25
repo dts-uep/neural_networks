@@ -210,7 +210,7 @@ def main():
     X4 = np.random.randint(0, 255 ,(3, 5))  # Time = 5, data at each time step = 3
     X5 = np.random.randint(0, 255 ,(3, 9))  # Time = 9, data at each time step = 3
     input_data = [X1, X2, X3, X4, X5]
-    input_data_scaled = [i/100 for i in input_data ]
+    input_data_scaled = [i/100 for i in input_data]
 
     # Output - two classes 0, 1
     y1 = [1, 1, 0, 1, 0]
@@ -321,3 +321,7 @@ not, the optimization will overshoot .
 - Model 1 with lower number of neurons in hidden layer show better learning rate than Model 3.
 - Model 3 with high number of neurons in hidden layer also show a slower learning per data point
  """
+<<<<<<< HEAD
+=======
+
+>>>>>>> 88c2224ea12d8474370e51300ae83a2780af9efa
