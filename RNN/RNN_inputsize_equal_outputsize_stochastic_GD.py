@@ -14,7 +14,7 @@ def sigmoid(z):
     if z > 2.2:
         return 0.9
     if z < -2.2:
-        return 0.01
+        return 0.1
     
     return 1 / (1 + np.exp(-1 * z[0, 0])) 
 
@@ -267,7 +267,7 @@ def main():
     for _ in range(n_test_points):
         n_time_frames = random.randint(5, 30) # 5 to 30 time frames, modified if needed
         test_data.append(np.random.randint(0, 255, (data_dimension_per_time, n_time_frames)))
-    test_data_scaled = [i/255 for i in input_data]
+    test_data_scaled = [i/255 for i in test_data]
     
     # Predict
     print("[Model 1 - Predict]")
@@ -312,7 +312,6 @@ initial weight so the activation output at time "t" is close to the activation o
 - W_y scale with GradWxLi and GradWaLi => W_y should be scale the same as W_X so the GradWxLi would be about the size
 of W_X
 
-<<<<<<< HEAD
 Results of demo models on large data:
 - Model 1: Even though the data is not scaled, the learning rate is low and gradient exploding does not occur.
 - Model 2: The data is scaled but the learning rate is high and gradient exploding occurs occasionally and if
@@ -322,7 +321,3 @@ not, the optimization will overshoot .
 - Model 1 with lower number of neurons in hidden layer show better learning rate than Model 3.
 - Model 3 with high number of neurons in hidden layer also show a slower learning per data point
  """
-=======
-- The loss does not improve: This maybe due to the randomness of the generated data and the simplicity of the model.
- """
->>>>>>> a4139887c888584e4bb1bbf675218fb36797e082
