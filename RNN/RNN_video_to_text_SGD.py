@@ -23,11 +23,13 @@ def flatten(data:np.array)->np.array:
 
 class WordEncoder():
     
-    def __init__(self, text_max_length:int, n_words:int=1):
+    def __init__(self, max_n_window:int, n_words:int=1):
+        
         self.vocab = {0:"ptyem"}
-        self.vocab_size = 0
+        self.vocab_size = 1 # Size include 'empty'
         self.__n = n_words
-        self.__txtlen = text_max_length
+        self.__txtlen = max_n_window*n_words
+        self.__fitted = False
         
         
     def __words_list__(self, Y:list):
@@ -41,26 +43,79 @@ class WordEncoder():
         return words_list
         
         
+    def __check_exist__(words:list):
+        return words in vocab.values()
+
+
+    def __one_hot_encoder__(self, vectorize_window:int):
+        
+        vector = np.zeros(len(self.vocab_size),1)
+        vector[vectorize_window] = 1
+        
+        return vector
+
+        
     def fit(self, Y:list):
         
         wl = self.__words_list__(Y)
-        for word in range(len(wl)-self.__n+1):
-            pass
-            
+        for word_index in range(len(wl)-self.__n+1):
+            current_vocab_index = len(self.vocab.keys())
+            words = []
+            i = 0
+            while i < self.__n:
+                words.append(wl[word_index + i]
+                i++
+            if not self.__check_exist__(words):
+                vocab[current_vocab_index+1] = words
+                self.vocab_size++
+        self.__fitted = True
+    
+    
+    def transform(self, Y:list)->list:
         
-    
-    
-    def transform(self, Y:list):
-        pass
+        if self.__fitted:
+            
+             Y_vectorized = []
+             inverse_vocab = {value:key for key, value in self.__vocab.item()}
+            
+            for text in Y:
+                vectorize_str = np.zeros(self.vocab_size, self.__txtlen/self.__n)
+                words = text.split()
+                words += [""]*(len(words)%self.__n)
+                while i < len(words):
+                    window = [words[i+ w] for w in range(self.__n)]
+                    vectorize_window = inverse_vocab[window]
+                     vector = __one_hot_encoder__(vectorize_window)
+                     vectorize_str[:, i/self.__n] = vector
+                    i += self.__n
+                Y_vectorized.append(vectorize_str)
+            return Y_vectorized
+                    
+        else:
+            raise Exception("Encoder object is not fitted")
         
         
     def fit_transform(self, Y:list):
-        pass
-    
-    
-    def reverse_transform(self, Y_encoded:list):
-        pass
         
+        self.fit(Y)
+        return self.transform(Y)
+    
+    
+    def reverse_transform(self, Y_encoded:list)->list:
+        
+        if self.__fitted:
+            Y_decoded = []
+            for matrix in Y_encoded:
+                words = []
+                for vector in range(self.__txtlen/self.__n):
+                    index = np.where(vector==1)[0][0]
+                     words.append(*vocab[index])
+                Y_decoded.append(' '.joint(words))
+            return Y_decoded
+        
+        else:
+            raise Exception("Encoder object is not fitted")
+            
 
 # Activation functions
 def ReLU(z:np.array)->np.array:
