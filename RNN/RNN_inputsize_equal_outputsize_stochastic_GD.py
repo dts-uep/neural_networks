@@ -87,7 +87,7 @@ class RNN():
         y_pred = self.__y_hat[index]
         n_time = len(y_true)
         
-        # Calculate gradients for W_a, W_x, bh
+        # Calculate gradients wrt W_a, W_x, bh
         GradWxL = np.zeros(self.__W_X.shape) 
         GradbhL = np.zeros(self.__bh.shape)
         GradWaL = np.zeros(self.__W_a.shape)
@@ -126,7 +126,7 @@ class RNN():
         del GradWaL      # Will not be used after this
         del GradbhL
         
-        # Calculate gradients for W_y and by
+        # Calculate gradients wrt W_y and by
         GradWyL = np.zeros(self.__W_y.shape)
         GradbyL = 0
         
@@ -321,7 +321,3 @@ not, the optimization will overshoot .
 - Model 1 with lower number of neurons in hidden layer show better learning rate than Model 3.
 - Model 3 with high number of neurons in hidden layer also show a slower learning per data point
  """
-<<<<<<< HEAD
-=======
-
->>>>>>> 88c2224ea12d8474370e51300ae83a2780af9efa
