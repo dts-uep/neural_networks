@@ -640,6 +640,7 @@ def main2():
     
 main2()
 
+
 # Note
 """  
 - The generated data use only one actor that perform 3 different types of motion - running, jumping, flying.
@@ -647,5 +648,5 @@ The output is very simple that has the same type of grammar make it more like a 
 its learning to predict word by word.
 - With 100 neurons in hidden layer and learning rate of 0.07:
 + The model learn to reduce error from 3.4596 to 0.0095 after 200 epochs.
-+ It predict on test data was all correct.
++ Its predicts on test data were all correct.
 """
