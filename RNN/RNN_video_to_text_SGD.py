@@ -5,7 +5,6 @@ import time
 # Preprocess
 def Extractor(data:np.array, filter:np.array)->np.array:
     
-    # Notes here
     conv_data = np.zeros(data.shape)
     half_size = filter.shape[0] // 2
     sheet = np.zeros((data.shape[0] + half_size*2, data.shape[1] + half_size*2))
@@ -322,8 +321,10 @@ class VideoToScript():
         self.__Y = Y
           
         # Train model
+        pre_avg_loss = 0
         for epoch in range(self.__epochs):
             sum_loss = 0
+            
             with tqdm(total=len(X), ncols=80) as pbar:
                 for index in range(len(self.__X)):
                     self.__forward_propagation__(index)
@@ -338,6 +339,10 @@ class VideoToScript():
                     #time.sleep(0.1) # Comment this for efficiency
                     pbar.update(1)
             print(f"Avg loss: {sum_loss/len(X):.4f}")
+            if abs(sum_loss/len(X) - pre_avg_loss) <= 0.00001:
+                print("Stop learning")
+                break
+            pre_avg_loss = sum_loss / len(X)
             self.__yhat = []
             
     
@@ -371,8 +376,10 @@ class VideoToScript():
             
         return yhat_labeled
         
-        
-# Test Model
+
+
+       
+# TESTING MODEL
 def main():
     
     # Generate data
@@ -447,11 +454,8 @@ def main():
     print("[Decode]")
     print(encoder.reverse_transform(descriptor.predict_label(test)))
     
-    
-    
-    
-main()
-
+      
+#main()
 
 
 # Notes
@@ -502,6 +506,7 @@ Backward Propagation:
 => scale down to avoid exploding gradient by (neurons in hidden).
 
 Cons:
+- The model runs with CPU.
 - The model must go through all the time frame in order to predict the first character.
 - Gradient vanishing in encoder as the backpropagation process go back in time (multiply factor got
 smaller as 1-tanh^2 and W both smaller than 1)
@@ -512,4 +517,135 @@ makes more 'empty' appear in a sentence.
 - After 1000 epoch of SGD, the average error is 4.2267 compare to 13.1779 at the start of the trainning,
 with the loss of only specific datapoint is low while other is high.
 => This maybe due to the random generated data.
+"""
+
+
+
+# Test with generated frames of size 28x28
+from simple_action_video_generating import *
+import random
+import matplotlib.pyplot as plt
+
+def main2():
+    
+    X = []
+    Y = []
+    n_video_each = 100
+    
+    # Create Jumping
+    for _ in range(n_video_each):
+        X.append(CreateJumpingVideo(random.randint(5, 10)))
+        Y.append("A jumping man.")
+    
+    # Create Running
+    for _ in range(n_video_each):
+        X.append(CreateRunningVideo(random.randint(8, 15)))
+        Y.append("A running man.")
+        
+    # Create Flying
+    for _ in range(n_video_each):
+        X.append(CreateFlyingVideo(random.randint(5, 10)))
+        Y.append("A flying plane.")
+    
+    plt.imshow(X[0][0])
+    plt.show()
+    plt.imshow(X[100][0])
+    plt.show()
+    plt.imshow(X[200][0])
+    plt.show()
+    
+    print("[Shape of the first video]")
+    print(X[0].shape)
+    print("\n[Number of data points]")
+    print(len(Y))
+    
+    # Shuffle data
+    shuffle_indexes = list(range(0, n_video_each*3))
+    random.shuffle(shuffle_indexes)
+    X = [X[i] for i in shuffle_indexes]
+    Y = [Y[i] for i in shuffle_indexes]
+    plt.imshow(X[0][0])
+    plt.show()
+    plt.imshow(X[1][0])
+    plt.show()
+    plt.imshow(X[2][0])
+    plt.show()
+    
+    # Process X
+    X_processed = []
+    for data in X:
+        data_processed = np.zeros((data.shape[1] * data.shape[2], data.shape[0]))
+        for t in range(data.shape[0]):
+            data_processed[:, t] = data[t,...].flatten()
+        X_processed.append(data_processed)
+    
+    print("\n[Shape of first processed point]")
+    print(X[0].shape)
+    
+    # Encode Y
+    script_size = 3
+    encoder = WordEncoder(script_size)    # For RNN that return script size output, 1 words each
+    #encoder = WordEncoder(script_size, 2) # For RNN that return sript size output, 2 words each
+    
+    #encoder.fit(Y)
+    #Y_encoded = encoder.transform(Y)
+    Y_encoded = encoder.fit_transform(Y)
+    
+    print("\n[Y encoded first point shape]")
+    print(Y_encoded[0].shape)
+    print("\n[Vocabulary]")
+    print(encoder.vocab)
+    print("\n[Vocabulary size]")
+    print(encoder.vocab_size)
+    
+    Y_string = encoder.reverse_transform(Y_encoded)
+    print(Y_string[0])
+    
+    # Model
+    input_size = X_processed[0].shape[0]
+    output_size = encoder.vocab_size
+    
+    descriptor = VideoToScript(input_size=input_size, output_size=output_size, n_hid_n=100, epochs=1000, script_size=script_size, lr=0.007)
+    descriptor.fit(X_processed, Y_encoded)
+    
+    # Test
+    X_test = []
+    n_video_each = 5
+    
+    # Create Jumping
+    for _ in range(n_video_each):
+        X_test.append(CreateJumpingVideo(random.randint(5, 10)))
+    
+    # Create Running
+    for _ in range(n_video_each):
+        X_test.append(CreateRunningVideo(random.randint(8, 15)))
+        
+    # Create Flying
+    for _ in range(n_video_each):
+        X_test.append(CreateFlyingVideo(random.randint(5, 10)))
+        
+    # Process X
+    X_test_processed = []
+    for data in X_test:
+        data_processed = np.zeros((data.shape[1] * data.shape[2], data.shape[0]))
+        for t in range(data.shape[0]):
+            data_processed[:, t] = data[t,...].flatten()
+        X_test_processed.append(data_processed)
+    
+    # Get predict script (if correct it should be all Jumping, all Running, all Flying consecutively)
+    Y_decoded = encoder.reverse_transform(descriptor.predict_label(X_test_processed))
+    for sentence in Y_decoded:
+        print(sentence)
+    
+    
+main2()
+
+# Note
+"""  
+- The generated data use only one actor that perform 3 different types of motion - running, jumping, flying.
+The output is very simple that has the same type of grammar make it more like a many to one model apart from
+its learning to predict word by word.
+- With 100 neurons in hidden layer and learning rate of 0.07:
++ The model learn to reduce error from 3.4596 to 0.0095 after 200 epochs.
++ It predict on test data was all correct.
 """
