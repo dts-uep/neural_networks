@@ -10,9 +10,10 @@ import numpy as np
 # Feature Engineering
 
 # Sobel Filtering
-def SobelFiltering(image_list:list, threshold:int)->list:
+def SobelFiltering(image_list:list, threshold:int, return_new_images:bool=False):
     
     im_flt_list = []
+    orientation_list = []
     
     for image in image_list:
         # X direction
@@ -22,12 +23,15 @@ def SobelFiltering(image_list:list, threshold:int)->list:
             [-1, 0, 1]
             ])
         
-        Gx = np.zeros_like(image)
+        Gx = np.zeros(image.shape)
         
         for i in range(image.shape[1] - 2):
             for j in range(image.shape[0] - 2):
-                Gx[j + 1, i + 1] = (filter_x * image[j:j+3, i:i+3]).sum()
-                
+                filtered = filter_x * image[j:j+3, i:i+3]
+                filtered = filtered.sum()
+                Gx[j + 1, i + 1] = filtered / 510.0 # Scale down 510, Max = 1020, Min = -1020
+        Gx = np.where(Gx==0, 0.00001, Gx)
+        
         # Y direction
         filter_y = np.asarray([
             [-1, -2, -1],
@@ -35,22 +39,39 @@ def SobelFiltering(image_list:list, threshold:int)->list:
             [ 1,  2,  1]
         ])
         
-        Gy = np.zeros_like(image)
+        Gy = np.zeros(image.shape)
          
         for i in range(image.shape[1] - 2):
             for j in range(image.shape[0] - 2):
-                Gy[j + 1, i + 1] = (filter_y * image[j:j+3, i:i+3]).sum()
+                filtered = filter_y * image[j:j+3, i:i+3]
+                filtered = filtered.sum()
+                Gy[j + 1, i + 1] = filtered / 510.0
          
         # Calculate magnitude
         G = np.sqrt(Gx**2 + Gy**2)
-         
-        # Convert to black white
-        image_filtered = np.where(G > threshold, 1, 0)
-        im_flt_list.append(image_filtered)
-   
-    return im_flt_list
         
+        if return_new_images:    
+            # Convert to black white
+            image_filtered = np.where(G > threshold, 1, 0)
+            im_flt_list.append(image_filtered)
+            
+        else:
+            # Calculate orentation
+            im_flt_list.append(G)
+            orientation = np.arctan(Gy/Gx) / np.pi * 180
+            orientation = np.where(orientation < 0, 180 + orientation, orientation)
+            orientation_list.append(orientation)    
+    
+    return im_flt_list if return_new_images else im_flt_list, orientation_list
         
+
+def HOG(image:list):
+    
+    cell_size = 8
+    
+    
+
+
 # Flatten
 def flatten_list(image_list:list)->np.array:
     return np.asarray([im.flatten() for im in image_list])
@@ -67,7 +88,11 @@ class SVM():
 
 # TEST
 def main():
-    pass
     
+    # Fake data
+    image_list = [np.random.randint(0, 255, (50, 50)), np.random.randint(0, 255, (50, 50))]
+    print(image_list[0])
+    print(SobelFiltering(image_list=image_list, threshold=0.05, return_new_images=True))
+    print(SobelFiltering(image_list=image_list, threshold=0.05, return_new_images=False))
 
 main()
