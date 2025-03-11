@@ -10,7 +10,7 @@ import numpy as np
 # Feature Engineering
 
 # Sobel Filtering
-def SobelFiltering(image_list:list, threshold:int, return_new_images:bool=False):
+def SobelFiltering(image_list:list, threshold:int=0.05, return_new_images:bool=False):
     
     im_flt_list = []
     orientation_list = []
@@ -65,11 +65,37 @@ def SobelFiltering(image_list:list, threshold:int, return_new_images:bool=False)
     return im_flt_list if return_new_images else im_flt_list, orientation_list
         
 
-def HOG(image:list):
+def HOG(image_list:list)->list:
     
     cell_size = 8
+    data = []
     
-    
+    for image in image_list:
+        
+        # Get 8x8 cells
+        cells_list = []
+        
+        for i in range(image.shape[0] / cell_size):
+            for j in range(image.shape[1] / cell_size):
+                cells_list.append(image[i*8:i*8+8, j*8:j*8+8])
+        
+        # Get Histogram Vector
+        histogram_vector_list = []
+        gradient_matrix, orientation = SobelFiltering(cells_list)
+        bins = (0, 20, 40, 60, 80, 100, 120, 140 , 160)
+        
+        for cell in cells:
+            histogram_vector = np.zeros(9)
+            for i in range(9):
+                in_bins_matrix = np.where(orientation >= bins[i] and orientation < bins[i] + 20, cell, 0)
+                histogram_vector[i] = in_bins_matrix.sum()
+        
+            histogram_vector_list.append(histogram_vector)
+        
+        # Concat into one vector
+        data.append(np.concatenate(*histogram_vector_list)
+        
+    return data
 
 
 # Flatten
