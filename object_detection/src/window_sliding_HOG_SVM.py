@@ -30,7 +30,7 @@ def SobelFiltering(image_list:list, threshold:int=0.05, return_new_images:bool=F
                 filtered = filter_x * image[j:j+3, i:i+3]
                 filtered = filtered.sum()
                 Gx[j + 1, i + 1] = filtered / 510.0 # Scale down 510, Max = 1020, Min = -1020
-        Gx = np.where(Gx==0, 0.00001, Gx)
+        Gx_denominator = np.where(Gx==0, 0.00001, Gx)
         
         # Y direction
         filter_y = np.asarray([
@@ -58,7 +58,7 @@ def SobelFiltering(image_list:list, threshold:int=0.05, return_new_images:bool=F
         else:
             # Calculate orentation
             im_flt_list.append(G)
-            orientation = np.arctan(Gy/Gx) / np.pi * 180
+            orientation = np.arctan(Gy/Gx_denominator) / np.pi * 180
             orientation = np.where(orientation < 0, 180 + orientation, orientation)
             orientation_list.append(orientation)    
     
@@ -75,8 +75,8 @@ def HOG(image_list:list)->list:
         # Get 8x8 cells
         cells_list = []
         
-        for i in range(image.shape[0] / cell_size):
-            for j in range(image.shape[1] / cell_size):
+        for i in range(int(image.shape[0] / cell_size)):
+            for j in range(int(image.shape[1] / cell_size)):
                 cells_list.append(image[i*8:i*8+8, j*8:j*8+8])
         
         # Get Histogram Vector
@@ -84,16 +84,17 @@ def HOG(image_list:list)->list:
         gradient_matrix, orientation = SobelFiltering(cells_list)
         bins = (0, 20, 40, 60, 80, 100, 120, 140 , 160)
         
-        for cell in cells:
+        for i in range(len(cells_list)):
             histogram_vector = np.zeros(9)
-            for i in range(9):
-                in_bins_matrix = np.where(orientation >= bins[i] and orientation < bins[i] + 20, cell, 0)
-                histogram_vector[i] = in_bins_matrix.sum()
+            for j in range(9):
+                in_bins_matrix = np.where(orientation[i] >= bins[j], gradient_matrix[i], 0)
+                in_bins_matrix = np.where(orientation[i] < bins[j] + 20, in_bins_matrix, 0)
+                histogram_vector[j] = in_bins_matrix.sum()
         
             histogram_vector_list.append(histogram_vector)
         
         # Concat into one vector
-        data.append(np.concatenate(*histogram_vector_list)
+        data.append(np.concatenate(histogram_vector_list))
         
     return data
 
@@ -103,12 +104,13 @@ def flatten_list(image_list:list)->np.array:
     return np.asarray([im.flatten() for im in image_list])
 
 
-
 # SVM
 class SVM():
     
-    def __innit__(self):
-        pass
+    def __innit__(self, n_class:int, input_size:int):
+        
+        self.__W = np.random.rand(n_class, input_size+1)
+        
 
 
 
@@ -116,9 +118,12 @@ class SVM():
 def main():
     
     # Fake data
-    image_list = [np.random.randint(0, 255, (50, 50)), np.random.randint(0, 255, (50, 50))]
+    image_list = [np.random.randint(0, 255, (80, 80)), np.random.randint(0, 255, (80, 80))]
     print(image_list[0])
     print(SobelFiltering(image_list=image_list, threshold=0.05, return_new_images=True))
     print(SobelFiltering(image_list=image_list, threshold=0.05, return_new_images=False))
+    
+    print(HOG(image_list))
+
 
 main()
