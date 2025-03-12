@@ -111,6 +111,11 @@ class SVM():
         
         self.__W = np.random.rand(n_class, input_size+1)
         
+    
+    def fit(self, data:list, batch_size:int=1, epoch:int=10):
+        
+        pass
+        
 
 
 
