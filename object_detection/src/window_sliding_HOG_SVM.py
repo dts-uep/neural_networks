@@ -110,9 +110,82 @@ class SVM():
     def __innit__(self, n_class:int, input_size:int):
         
         self.__W = np.random.rand(n_class, input_size+1)
+        self.__X = None
+        self.__Y = None
+        self.__Z = None
+        self.__loss = 0
+        self.__c = n_class
+        self.__lr = None
+    
+    
+    def __forward__(self):
+        self.__Z = np.dot(self.__W, self.X)
+    
+    
+    def __update_weight__(self):
         
+        # Calculate loss
+        Ztrue = Z[self.__Y].sum(axis=1)
+        Loss_matrix = 1 - Ztrue + Z
+        Loss_matrix = np.maximum(Loss_natrix)
+        self.__loss = Loss_matrix.sun()
+        
+        del Ztrue
+        
+        # Get gradients
+        gradient_count = np.where(Loss_matrix > 0, 1, 0)
+        gradinet_count = np.where(self.__Y == 1, -1, 0)
+        
+        input_matrix = self.__X.T[np.newaxis,...]
+        gradient_matrix = gradient_count*input_matrix
+        gradient_matrix = gradient_matrix.sum(axis=0)
+        
+        del gradient_count, input_matrix
+        
+        # Update parameters
+        self.__W -= self.__lr*gradient_mattix
+        
+    
+    def fit(self, X:list, Y:list, epochs:int=1, lr:float=0.01):
+        
+        # Set up
+        self.__X = np.hstack(X)
+        self.__X = np.vstack([X, np.ones(1, len(X)])
+        self.__lr = lr
+        
+        self.__Y = np.hstack(Y)
+        
+        for epoch in range(epochs):
+            
+            self.__forward__()
+            self.__update_weight__()
+            
+            print(f"Loss: {self.__loss})
+     
 
-
+    def predict(self, X:list):
+        
+        self.__X = np.hstack(X)
+        self.__X = np.vstack([X, np.ones(1, len(X)])
+        self.__forward__()
+        
+        return self.__Z
+        
+    
+    def predict_label(self, X:list):
+        
+        y_label = []
+        y_pred = self.predict(X)
+        
+        for n in range(len(X)):
+            highest_score = np.argmax(y_pred[:, n])
+            label = np.zero(self.__c, 1)
+            label[highest_score] = 1
+            y_label.append(label)
+        
+        return y_label
+            
+            
 
 # TEST
 def main():
