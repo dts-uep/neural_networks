@@ -1,10 +1,63 @@
 import numpy as np
 
 
-# Detector
-
-
-
+# One hit encoder
+class OneHotEncoder():
+    
+    def __innit__(self):
+        
+        self.__class_list = None
+        self.__index_list = None
+        self.vocab = None
+        self.vocab_size = 0
+        
+     
+    def fit(self, Y:list):
+        
+        self.__class_list = list(set(Y))
+        self.__index_list = range(len(self.__class_list))
+        
+        self.vocab = dict(zip(self.__index_list, self.__class_list))
+        self.vocab_size = len(self.__class_list)
+        
+    
+    def transform(self, Y:list):
+        
+        if self.__class_list:
+            Y_encoded = []
+    
+            for y in Y:
+            
+                index = self.__class_list.index(y)
+                y_encoded = np.zeros((len(self.__class_list), 1))
+                y_encoded[index, 0] = 1
+                Y_encoded.append(y_encoded)
+            
+            return Y_encoded
+        
+        else:
+            raise Exception("Class object is not fitted.")
+        
+        
+    def fit_transform(self, Y:list):
+        self.fit(Y)
+        return self.transform(Y)
+        
+    
+    def reverse_transform(self, Y:list):
+        
+        if self.__class_list:
+            Y_decoded = []
+            
+            for y in Y:
+                key = np.argmax(y)
+                Y_decoded.append(self.vocab[key])
+            
+            return Y_decoded
+            
+        else:
+            raise Exception("Class object is not fitted.")
+    
 
 # Classifier
 # Feature Engineering
@@ -89,9 +142,9 @@ def HOG(image_list:list)->list:
             for j in range(9):
                 in_bins_matrix = np.where(orientation[i] >= bins[j], gradient_matrix[i], 0)
                 in_bins_matrix = np.where(orientation[i] < bins[j] + 20, in_bins_matrix, 0)
-                histogram_vector[j] = in_bins_matrix.sum()
+                histogram_vector[j] = in_bins_matrix.sum() / cell_size**2  # Scale by number of pixel per cell
         
-            histogram_vector_list.append(histogram_vector)
+            histogram_vector_list.append(histogram_vector[:, np.newaxis])
         
         # Concat into one vector
         data.append(np.concatenate(histogram_vector_list))
@@ -107,28 +160,113 @@ def flatten_list(image_list:list)->np.array:
 # SVM
 class SVM():
     
-    def __innit__(self, n_class:int, input_size:int):
+    def __init__(self, n_class:int, input_size:int):
         
-        self.__W = np.random.rand(n_class, input_size+1)
+        self.__W = np.random.rand(n_class, input_size+1) / input_size
+        self.__X = None
+        self.__Y = None
+        self.__Z = None
+        self.__loss = 0
+        self.__c = n_class
+        self.__lr = None
+    
+    
+    def __forward__(self):
+        self.__Z = np.dot(self.__W, self.__X)
+    
+    
+    def __update_weight__(self):
+        
+        # Calculate loss
+        Ztrue = np.where(self.__Y==1, self.__Z, 0).sum(axis=0)
+        Loss_matrix = 1 - Ztrue + self.__Z
+        Loss_matrix = np.maximum(Loss_matrix, 0)
+        Loss_matrix = np.where(self.__Y == 1, 0, Loss_matrix)
+        self.__loss = Loss_matrix.sum()
+        
+        del Ztrue
+        
+        # Get gradients
+        gradient_count = np.where(Loss_matrix > 0, 1, 0)
+        gradient_count = np.where(self.__Y == 1, -1, gradient_count)
+        
+        gradient_matrix = np.zeros_like(self.__W)
+        for w in range(self.__c):
+            gradient_matrix[w, :] = (self.__X*gradient_count[w,:]).sum(axis=1).T
+        
+        del gradient_count
+        
+        # Update parameters
+        self.__W -= self.__lr*gradient_matrix / self.__X.shape[1]
         
     
-    def fit(self, data:list, batch_size:int=1, epoch:int=10):
+    def fit(self, X:list, Y:list, epochs:int=1, lr:float=0.001):
         
-        pass
+        # Set up
+        self.__X = np.hstack(X)
+        self.__X = np.vstack([self.__X, np.ones((1, len(X)))])
+        self.__lr = lr
         
+        self.__Y = np.hstack(Y)
+        
+        for _ in range(epochs):
+            
+            self.__forward__()
+            self.__update_weight__()
+            
+            print(f"Loss: {self.__loss}")
+     
+
+    def predict(self, X:list):
+        
+        self.__X = np.hstack(X)
+        self.__X = np.vstack([self.__X, np.ones((1, len(X)))])
+        self.__forward__()
+        
+        return self.__Z
+        
+    
+    def predict_label(self, X:list):
+        
+        y_label = []
+        y_pred = self.predict(X)
+        
+        for n in range(len(X)):
+            highest_score = np.argmax(y_pred[:, n])
+            label = np.zeros((self.__c, 1))
+            label[highest_score] = 1
+            y_label.append(label)
+        
+        return y_label
 
 
+# Detector          
+            
 
 # TEST
 def main():
     
     # Fake data
-    image_list = [np.random.randint(0, 255, (80, 80)), np.random.randint(0, 255, (80, 80))]
+    image_list = [np.random.randint(0, 255, (80, 80)), np.random.randint(0, 255, (80, 80)), np.random.randint(0, 255, (80, 80)), np.random.randint(0, 255, (80, 80)), np.random.randint(0, 255, (80, 80))]
     print(image_list[0])
     print(SobelFiltering(image_list=image_list, threshold=0.05, return_new_images=True))
     print(SobelFiltering(image_list=image_list, threshold=0.05, return_new_images=False))
     
     print(HOG(image_list))
-
+    Y = ['car', 'bike', 'pedestrian', 'bus', 'bus']
+    encoder = OneHotEncoder()
+    print(encoder.fit_transform(Y))
+    print(encoder.reverse_transform(encoder.fit_transform(Y)))
+    
+    svm = SVM(encoder.vocab_size, 900)
+    svm.fit(HOG(image_list), encoder.transform(Y), epochs=10000)
+    
+    image_list_test = [np.random.randint(0, 255, (80, 80))]
+    print(svm.predict(HOG(image_list=image_list_test)))
+    print(svm.predict_label(HOG(image_list=image_list_test)))
+    print(encoder.reverse_transform(svm.predict_label(HOG(image_list=image_list_test))))
+    print(encoder.vocab)
+    
+    print(encoder.reverse_transform(svm.predict_label(HOG(image_list=image_list[0:1]))))
 
 main()
