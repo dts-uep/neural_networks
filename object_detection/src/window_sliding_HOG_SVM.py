@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 
 # One hit encoder
@@ -59,10 +60,7 @@ class OneHotEncoder():
             raise Exception("Class object is not fitted.")
     
 
-# Classifier
 # Feature Engineering
-
-# Sobel Filtering
 def SobelFiltering(image_list:list, threshold:int=0.05, return_new_images:bool=False):
     
     im_flt_list = []
@@ -152,12 +150,11 @@ def HOG(image_list:list)->list:
     return data
 
 
-# Flatten
 def flatten_list(image_list:list)->np.array:
     return np.asarray([im.flatten() for im in image_list])
 
 
-# SVM
+# Classifier - SVM
 class SVM():
     
     def __init__(self, n_class:int, input_size:int):
@@ -241,7 +238,28 @@ class SVM():
 
 
 # Detector          
-            
+def object_detect(image:np.array, window_size_list:list, rotation_list:list, classifier, image_size:int, flip:bool=False):
+
+    # Initiate transform matrices
+    classifier = classifier
+    
+    # Windows flip vertically or not
+    if flip:
+        flip_list = [1, np.asarray([[1, 0], [0, -1]])]
+    else:
+        flip_list = [1]
+    
+    # Windows rotation of alpha to check object rotation of negative alpha
+    rotation_list = [math.radians(alpha) for alpha in rotation_list]
+    rotation_list = [np.asarray([
+        [round(math.cos(alpha), 2), round(math.cos(alpha+math.pi/2), 2)],
+        [round(math.sin(alpha), 2), round(math.sin(alpha+math.pi/2), 2)]
+        ]) for alpha in rotation_list]
+    
+    for window in window_size_list:
+        pass
+        
+
 
 # TEST
 def main():
@@ -269,4 +287,12 @@ def main():
     
     print(encoder.reverse_transform(svm.predict_label(HOG(image_list=image_list[0:1]))))
 
-main()
+#main()
+
+
+def test():
+    
+    object_detect([], [], [0, 45, 60], None, 80, False)
+    object_detect([], [], [0, -45, -60], None, 80, True)
+
+test()
