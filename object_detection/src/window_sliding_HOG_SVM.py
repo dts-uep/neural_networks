@@ -2,7 +2,7 @@ import numpy as np
 import math
 
 
-# One hit encoder
+# One hot encoder
 class OneHotEncoder():
     
     def __innit__(self):
@@ -58,7 +58,13 @@ class OneHotEncoder():
             
         else:
             raise Exception("Class object is not fitted.")
-    
+
+
+# Image resizing
+def square_image_resize(image:list, new_size):
+    pass
+
+
 
 # Feature Engineering
 def SobelFiltering(image_list:list, threshold:int=0.05, return_new_images:bool=False):
@@ -239,7 +245,11 @@ class SVM():
 
 # Detector          
 def object_detect(image:np.array, window_size_list:list, rotation_list:list, classifier, image_size:int, flip:bool=False):
-
+    
+    # Image properties
+    im_width = image.shape[1]
+    im_length = image.shape[0]
+    
     # Initiate transform matrices
     classifier = classifier
     
@@ -251,13 +261,52 @@ def object_detect(image:np.array, window_size_list:list, rotation_list:list, cla
     
     # Windows rotation of alpha to check object rotation of negative alpha
     rotation_list = [math.radians(alpha) for alpha in rotation_list]
-    rotation_list = [np.asarray([
-        [round(math.cos(alpha), 2), round(math.cos(alpha+math.pi/2), 2)],
-        [round(math.sin(alpha), 2), round(math.sin(alpha+math.pi/2), 2)]
-        ]) for alpha in rotation_list]
     
-    for window in window_size_list:
-        pass
+    result = []
+    
+    for w in window_size_list:
+        for f in flip_list:
+            for a in rotation_list:
+                attribute = [w, f, rot]
+                sliding_list = []
+                location_list = []
+                label_list = []
+                
+                for r in range(im_length / w * 3 - 2):
+                    for c in range(im_width / w * 3 - 2):
+                        
+                        slide = image[r*w/3:r*w/3+w, c*w/3:c*w/3+w]
+                        
+                        # Flip slide
+                        f_slide = np.zeros_like(slide)
+                        x = np.linspace(0, w, w)
+                        y = np.linspace(0, w, w)
+                        xv, yv = np.meshgrid(x, y)
+                        
+                        for i in range(w):
+                            origin_pos = np.vstack(xv, yv)
+                            f_pos = np.dot(f, origin_pos)
+                            f_slide[f_pos] = slide[origin_pos]
+                            
+                        # Rotate image
+                        new_w = int(abs(w/2/math.cos(a-math.pi/4)*math.sqrt(2)))
+                        r_slide = np.zeros((new_w,new_w))
+                        
+                        for i in range(w):
+                            origin_pos = np.vstack(xv, yv)
+                            r_pos = np.dot(r, origin_pos).astype(int)
+                            mask = np.any(r_pos > new_w, axis = 0)
+                            r_pos = r_pos[:,~mask]
+                            r_slide[r_pos] = slide[origin_pos]
+                        
+                        sliding_list.append(r_slide)
+                        location_list.append((r*w/3, c*w/3))
+                
+                # resize
+                            
+                        
+                        
+                        
         
 
 
