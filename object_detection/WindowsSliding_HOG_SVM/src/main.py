@@ -61,8 +61,23 @@ class OneHotEncoder():
 
 
 # Image resizing
-def square_image_resize(image:list, new_size):
-    pass
+def image_resize(image_list:list, new_shape:tuple):
+    
+    new_image_list = []
+    
+    scale_r = new_shape[0] / image_list[0].shape[0] 
+    scale_c = new_shape[1] / image_list[0].shape[1]
+    
+    for image in image_list:
+        new_image = np.zeros(new_shape)
+        
+        for i in range(new_image.shape[0]):
+            for j in range(new_image.shape[1]):
+                new_image[i, j] = image[int(i/scale_r), int(j/scale_c)]
+        
+        new_image_list.append(new_image)   
+    
+    return new_image_list
 
 
 
@@ -156,10 +171,6 @@ def HOG(image_list:list)->list:
     return data
 
 
-def flatten_list(image_list:list)->np.array:
-    return np.asarray([im.flatten() for im in image_list])
-
-
 # Classifier - SVM
 class SVM():
     
@@ -172,6 +183,7 @@ class SVM():
         self.__loss = 0
         self.__c = n_class
         self.__lr = None
+        self.input_size = input_size
     
     
     def __forward__(self):
@@ -244,7 +256,7 @@ class SVM():
 
 
 # Detector          
-def object_detect(image:np.array, window_size_list:list, rotation_list:list, classifier, image_size:int, flip:bool=False):
+def object_detect(image:np.array, window_size_list:list, rotation_list:list, classifier, threshold:float, flip:bool=False):
     
     # Image properties
     im_width = image.shape[1]
@@ -267,54 +279,83 @@ def object_detect(image:np.array, window_size_list:list, rotation_list:list, cla
     for w in window_size_list:
         for f in flip_list:
             for a in rotation_list:
-                attribute = [w, f, rot]
+                attributes = [w, f, a]
                 sliding_list = []
                 location_list = []
-                label_list = []
                 
-                for r in range(im_length / w * 3 - 2):
-                    for c in range(im_width / w * 3 - 2):
+                for r in range(int(im_length / w * 3 - 2)):
+                    for c in range(int(im_width / w * 3 - 2)):
                         
-                        slide = image[r*w/3:r*w/3+w, c*w/3:c*w/3+w]
+                        slide = image[int(r*w/3):int(r*w/3+w), int(c*w/3):int(c*w/3+w)]
                         
                         # Flip slide
                         f_slide = np.zeros_like(slide)
-                        x = np.linspace(0, w, w)
-                        y = np.linspace(0, w, w)
+                        x = np.linspace(-(w-1)/2, (w-1)/2, w)
+                        y = np.linspace(-(w-1)/2, (w-1)/2, w)
                         xv, yv = np.meshgrid(x, y)
                         
-                        for i in range(w):
-                            origin_pos = np.vstack(xv, yv)
-                            f_pos = np.dot(f, origin_pos)
-                            f_slide[f_pos] = slide[origin_pos]
-                            
+                        if f != 1:
+                            for i in range(w-1):
+                                origin_pos = np.vstack((xv[i, :], yv[i, :])).astype(int)
+                                f_pos = np.dot(f, origin_pos).astype(int)
+                                origin_pos = origin_pos + int((w-1)/2)
+                                f_pos = f_pos + int((w-1)/2)
+                                f_slide[f_pos[0, :], f_pos[1, :]] = slide[origin_pos[0, :], origin_pos[1, :]]
+                        else:
+                            f_slide = slide
+                        
+                        del slide
+                         
                         # Rotate image
                         new_w = int(abs(w/2/math.cos(a-math.pi/4)*math.sqrt(2)))
                         r_slide = np.zeros((new_w,new_w))
                         
-                        for i in range(w):
-                            origin_pos = np.vstack(xv, yv)
-                            r_pos = np.dot(r, origin_pos).astype(int)
-                            mask = np.any(r_pos > new_w, axis = 0)
-                            r_pos = r_pos[:,~mask]
-                            r_slide[r_pos] = slide[origin_pos]
+                        if a != 0.0:
+                            for i in range(w-1):
+                                rotation_transform = np.array([[math.cos(a), math.cos(a+math.pi/2)],
+                                                                [math.sin(a), math.sin(a+math.pi/2)]])
+                                origin_pos = np.vstack((xv[i], yv[i])).astype(int)
+                                r_pos = np.dot(rotation_transform, origin_pos).astype(int)
+                                mask = np.any(r_pos > (new_w-1)/2, axis = 0)
+                                r_pos = r_pos[:,~mask]
+                                origin_pos = origin_pos[:, ~mask]
+                                mask = np.any(r_pos < -(new_w-1)/2, axis = 0)
+                                r_pos = r_pos[:,~mask]
+                                origin_pos = origin_pos[:, ~mask]
+                                r_pos = r_pos + int((new_w-1)/2)
+                                origin_pos = origin_pos + int((w-1)/2)
+                                r_slide[r_pos[0, :], r_pos[1, :]] = f_slide[origin_pos[0, :], origin_pos[1, :]]
+                        else:
+                            r_slide = f_slide
+                        
+                        del f_slide
                         
                         sliding_list.append(r_slide)
                         location_list.append((r*w/3, c*w/3))
+                del r_slide
                 
                 # resize
-                            
-                        
-                        
-                        
-        
-
+                resize_size = int(math.sqrt(classifier.input_size/9)  * 8)
+                sliding_list = image_resize(sliding_list, (resize_size, resize_size))
+                
+                # HOG + SVM
+                class_prob_predict = classifier.predict(HOG(sliding_list))
+                
+                # Remove none categorized window and append in to result
+                result.append([(attributes,
+                               location_list[i],
+                               class_prob_predict[:, i]) for i in range(class_prob_predict.shape[1])
+                               if np.all(class_prob_predict[:, i]) > threshold])
+                
+    return result     
+                     
+                
 
 # TEST
 def main():
     
     # Fake data
-    image_list = [np.random.randint(0, 255, (80, 80)), np.random.randint(0, 255, (80, 80)), np.random.randint(0, 255, (80, 80)), np.random.randint(0, 255, (80, 80)), np.random.randint(0, 255, (80, 80))]
+    image_list = [np.random.randint(0, 255, (40, 40)), np.random.randint(0, 255, (40, 40)), np.random.randint(0, 255, (40, 40)), np.random.randint(0, 255, (40, 40)), np.random.randint(0, 255, (40, 40))]
     print(image_list[0])
     print(SobelFiltering(image_list=image_list, threshold=0.05, return_new_images=True))
     print(SobelFiltering(image_list=image_list, threshold=0.05, return_new_images=False))
@@ -325,23 +366,28 @@ def main():
     print(encoder.fit_transform(Y))
     print(encoder.reverse_transform(encoder.fit_transform(Y)))
     
-    svm = SVM(encoder.vocab_size, 900)
-    svm.fit(HOG(image_list), encoder.transform(Y), epochs=10000)
+    svm = SVM(encoder.vocab_size, 225)
+    svm.fit(HOG(image_list), encoder.transform(Y), epochs=500, lr=0.01)
     
-    image_list_test = [np.random.randint(0, 255, (80, 80))]
+    image_list_test = [np.random.randint(0, 255, (40, 40))]
     print(svm.predict(HOG(image_list=image_list_test)))
     print(svm.predict_label(HOG(image_list=image_list_test)))
     print(encoder.reverse_transform(svm.predict_label(HOG(image_list=image_list_test))))
     print(encoder.vocab)
     
     print(encoder.reverse_transform(svm.predict_label(HOG(image_list=image_list[0:1]))))
-
-#main()
-
-
-def test():
     
-    object_detect([], [], [0, 45, 60], None, 80, False)
-    object_detect([], [], [0, -45, -60], None, 80, True)
+    fake_image = np.random.randint(0, 255, (400, 700))
+    # Window size should be divisible by 3
+    print(object_detect(fake_image, window_size_list=[81, 162, 201, 300], rotation_list=[0, 45, 90, 180], classifier=svm, threshold=0.1, flip=False))
+
+main()
+
+
+
+# Test
+def test():
+    pass
 
 test()
+    
