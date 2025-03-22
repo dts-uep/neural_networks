@@ -23,9 +23,9 @@ print(svm_classifier.predict(data))
 result = svm_classifier.predict_label(data)
 
 # Decode
-with open("WindowsSliding_HOG_SVM/models/vocab.pkl", "rb") as file:
+with open("WindowsSliding_HOG_SVM/models/encoder.pkl", "rb") as file:
     encoder = pkl.load(file)
 
-print(encoder.reverse_transform(result))  # True label: ['car', 'motorbike', 'car', 'bus/car']
-
+print(encoder.reverse_transform(result)) 
+print(os.listdir(cf.VAL_DATA_PATH))
 

@@ -23,7 +23,7 @@ class SVM():
         
         # Calculate loss
         Ztrue = np.where(self.__Y==1, self.__Z, 0).sum(axis=0)
-        Loss_matrix = 0.2 - Ztrue + self.__Z 
+        Loss_matrix = 1 - Ztrue + self.__Z 
         Loss_matrix = np.maximum(Loss_matrix, 0)
         Loss_matrix = np.where(self.__Y == 1, 0, Loss_matrix)
         self.__loss = Loss_matrix.sum()

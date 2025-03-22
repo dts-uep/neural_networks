@@ -92,9 +92,10 @@ def window_sliding_dection(image:np.array, window_size_list:list, rotation_list:
                 class_prob_predict = classifier.predict(list)
                 
                 # Remove none categorized window and append in to result
-                results += [(w,
+                results += [[w,
                                location_list[i],
-                               class_prob_predict[:, i] > threshold) for i in range(class_prob_predict.shape[1])
+                               class_prob_predict[:, i]] for i in range(class_prob_predict.shape[1])
                                if np.any(class_prob_predict[:, i] > threshold)]
-                
+    
+    print('Done')
     return results 
